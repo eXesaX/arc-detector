@@ -15,4 +15,4 @@ def get_arc(start, finish, num, radius, r_rnd):
 
 
 if __name__ == '__main__':
-    print(get_arc(0, 10, 500, 5, 0))
+    print(get_arc(0, 40, 500, 5, 0))
