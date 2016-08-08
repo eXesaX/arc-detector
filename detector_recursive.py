@@ -1,4 +1,5 @@
 import numpy as np
+from math import sqrt
 
 def detect_arc(arc):
     pass
@@ -13,8 +14,8 @@ def find_edges(arc):
 
 def get_middle_norm(l, r):
     # get line equation
-    A = r[1] - l[1]
-    B = r[0] - l[0]
+    A = r[0] - l[0]
+    B = l[1] - r[1]
     C = l[0]*r[1] - r[0]*l[1]
 
     k = B / -A
@@ -35,3 +36,13 @@ def get_perpendicular(k, b, x, y):
 
     return perp_k, perp_b
 
+
+def find_intersection(k1, b1, k2, b2):
+    x = (b2 - b1) / (k1 - k2)
+    y = k1 * x + b1
+
+    return x, y
+
+
+def get_distance(x1, y1, x2, y2):
+    return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)

@@ -3,7 +3,7 @@ from tkinter import *
 from arc_generator import get_arc
 import numpy as np
 import cv2
-from detector_recursive import find_edges, get_middle_norm
+from detector_recursive import find_edges, get_middle_norm, find_intersection, get_perpendicular, get_distance
 
 class GUI:
     def __init__(self, width=600, height=600):
@@ -24,30 +24,46 @@ class GUI:
 
     def loop(self):
         self.canvas.delete(self.canvas, ALL)
-        arc = get_arc(20, 140, 1000, 100, 0)
+        arc = get_arc(20, 140, 1000, 100, 1)
 
         edges = find_edges(arc)
 
-        norm, arc_line, midpoint = get_middle_norm(*edges)
+        arc_line, norm, midpoint = get_middle_norm(*edges)
+
+        # sorted_arc = sorted(arc, key=lambda x: x[0])
+
+        distances = []
+
+        for x, y in arc:
+            perp = get_perpendicular(norm[0], norm[1], x, y)
+            intersection = find_intersection(perp[0], perp[1], norm[0], norm[1])
+            distance = get_distance(intersection[0], intersection[1], x, y)
+            distances.append((x, y, distance))
+
+        arc_midpoint = min(distances, key=lambda x: x[2])
 
         self.draw_arc(arc)
         self.canvas.create_line(self.get_screen_coords(edges[0][0],
                                                        edges[0][1],
                                                        edges[1][0],
-                                                       edges[1][1]), fill="red")
+                                                       edges[1][1]))
 
         self.canvas.create_line(self.get_screen_coords(-self.width,
                                                        arc_line[0] * -self.width + arc_line[1],
                                                        self.width,
-                                                       arc_line[0] * self.width + arc_line[1]), fill="red")
+                                                       arc_line[0] * self.width + arc_line[1]), fill="green")
 
         self.canvas.create_line(self.get_screen_coords(-self.width,
-                                                       norm[0] * -self.width - norm[1],
+                                                       norm[0] * -self.width + norm[1],
                                                        self.width,
-                                                       norm[0] * self.width + norm[1]), fill="green")
+                                                       norm[0] * self.width + norm[1]), fill="red")
+
 
         self.canvas.create_oval(self.get_screen_coords(midpoint[0] - 5, midpoint[1] - 5, midpoint[0] + 5, midpoint[1] + 5),
-                                fill="orange")
+                                fill="green")
+
+        self.canvas.create_oval(self.get_screen_coords(arc_midpoint[0] - 5, arc_midpoint[1] - 5, arc_midpoint[0] + 5, arc_midpoint[1] + 5),
+                                fill="red")
 
         self.window.after(self.update_period, self.loop)
 
