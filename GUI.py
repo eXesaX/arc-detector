@@ -26,48 +26,36 @@ class GUI:
         self.canvas.delete(self.canvas, ALL)
         arc = get_arc(20, 140, 1000, 100, 1)
 
-
-
         sorted_arc = sorted(arc, key=lambda x: x[0])
-        segments = find_segments(sorted_arc, 5)
+        segments = find_segments(sorted_arc, 4)
         self.draw_arc(arc)
         for x, y in segments:
             self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="yellow")
-        # self.canvas.create_line(self.get_screen_coords(edges[0][0],
-        #                                                edges[0][1],
-        #                                                edges[1][0],
-        #                                                edges[1][1]))
-        #
-        # self.canvas.create_line(self.get_screen_coords(-self.width,
-        #                                                arc_line[0] * -self.width + arc_line[1],
-        #                                                self.width,
-        #                                                arc_line[0] * self.width + arc_line[1]), fill="green")
-        #
-        # self.canvas.create_line(self.get_screen_coords(-self.width,
-        #                                                norm[0] * -self.width + norm[1],
-        #                                                self.width,
-        #                                                norm[0] * self.width + norm[1]), fill="red")
-        #
-        #
-        # self.canvas.create_oval(self.get_screen_coords(midpoint[0] - 5, midpoint[1] - 5, midpoint[0] + 5, midpoint[1] + 5),
-        #                         fill="green")
-        #
-        # self.canvas.create_oval(self.get_screen_coords(arc_midpoint[0] - 5, arc_midpoint[1] - 5, arc_midpoint[0] + 5, arc_midpoint[1] + 5),
-        #                         fill="red")
+
+
+        radius_lines = []
+        for i, (x, y) in enumerate(segments[0:]):
+            x1, y1, x2, y2 = segments[i - 1][0], segments[i - 1][1], x, y
+            midpoint = (x2 + x1) / 2, (y2 + y1) / 2
+            try:
+                A = x2 - x1
+                B = y1 - y2
+                C = x1*y2 - y1*x2
+                k = B / -A
+                b = C / -A
+                r_line = get_perpendicular(k, b, midpoint[0], midpoint[1])
+                radius_lines.append(r_line)
+            except ZeroDivisionError:
+                pass
+
+        for k, b in radius_lines:
+            self.canvas.create_line(self.get_screen_coords(-self.width,
+                                                           -k*self.width + b,
+                                                           self.width,
+                                                           k*self.width + b), fill="green")
 
         self.window.after(self.update_period, self.loop)
 
-    def normalize(self, arc):
-        max_x = max(arc, key=lambda point: point[0])[0]
-        max_y = max(arc, key=lambda point: point[1])[1]
-
-        normalized_arc = []
-
-        for x, y in arc:
-            nx = int(x / max_x * int(self.width / 2))
-            ny = int(y / max_y * int(self.height / 2))
-            normalized_arc.append((nx, ny))
-        return normalized_arc
 
     def draw_arc(self, arc):
         for x, y in arc:

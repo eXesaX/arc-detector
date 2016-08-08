@@ -51,26 +51,30 @@ def get_distance(x1, y1, x2, y2):
 def find_segments(arc, depth, segments_acc=None):
     if depth == 0:
         return segments_acc
+    elif len(arc) < 2:
+        return segments_acc
     else:
         left_edge, right_edge = find_edges(arc)
+        try:
+            arc_line, norm, midpoint = get_middle_norm(*(left_edge, right_edge))
 
-        arc_line, norm, midpoint = get_middle_norm(*(left_edge, right_edge))
+            sorted_arc = sorted(arc, key=lambda x: x[0])
 
-        sorted_arc = sorted(arc, key=lambda x: x[0])
+            distances = []
 
-        distances = []
+            for i, (x, y) in enumerate(sorted_arc):
+                perp = get_perpendicular(norm[0], norm[1], x, y)
+                intersection = find_intersection(perp[0], perp[1], norm[0], norm[1])
+                distance = get_distance(intersection[0], intersection[1], x, y)
+                distances.append((x, y, distance, i))
 
-        for i, (x, y) in enumerate(sorted_arc):
-            perp = get_perpendicular(norm[0], norm[1], x, y)
-            intersection = find_intersection(perp[0], perp[1], norm[0], norm[1])
-            distance = get_distance(intersection[0], intersection[1], x, y)
-            distances.append((x, y, distance, i))
+            arc_midpoint = min(distances, key=lambda x: x[2])
+            am_index = arc_midpoint[3]
+            if not segments_acc:
+                sa_new = [left_edge]
+            else:
+                sa_new = [left_edge] + segments_acc
 
-        arc_midpoint = min(distances, key=lambda x: x[2])
-        am_index = arc_midpoint[3]
-        if not segments_acc:
-            sa_new = [left_edge]
-        else:
-            sa_new = [left_edge] + segments_acc
-
-        return find_segments(sorted_arc[:am_index], depth - 1, sa_new) + find_segments(sorted_arc[am_index:], depth - 1, sa_new)
+            return find_segments(sorted_arc[:am_index], depth - 1, sa_new) + find_segments(sorted_arc[am_index:], depth - 1, sa_new)
+        except ZeroDivisionError:
+            return [left_edge] + segments_acc
