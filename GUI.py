@@ -1,7 +1,9 @@
 import tkinter
 from tkinter import *
 from arc_generator import get_arc
-from detector_recursive import find_intersection, get_perpendicular, find_segments, calc_radius
+from detector_recursive import find_intersection, get_perpendicular, find_segments, calc_radius, find_edges, \
+    get_middle_norm
+
 
 class GUI:
     def __init__(self, width=600, height=600):
@@ -24,7 +26,6 @@ class GUI:
             self.loop()
 
     def loop(self):
-        self.counter += 1
         self.canvas.delete(self.canvas, ALL)
         arc = get_arc(20, 200, 1000, 150, 1)
 
@@ -67,15 +68,20 @@ class GUI:
 
         avg = sum[0] / len(avg_points), sum[1] / len(avg_points)
 
-        for x,y in avg_points:
-            self.canvas.create_oval(self.get_screen_coords(x - 5, y - 5, x + 5, y + 5), fill="yellow")
+        arc_edges = find_edges(arc)
+        arc_line, (perp_k, perp_b), midpoint = get_middle_norm(*arc_edges)
+        dist_k, dist_b = get_perpendicular(perp_k, perp_b, avg[0], avg[1])
+        centered_point = find_intersection(perp_k, perp_b, dist_k, dist_b)
+
+        # for x,y in avg_points:
+        #     self.canvas.create_oval(self.get_screen_coords(x - 5, y - 5, x + 5, y + 5), fill="yellow")
 
         self.canvas.create_oval(self.get_screen_coords(avg[0] - 5, avg[1] - 5, avg[0] + 5, avg[1] + 5), fill="red")
+        self.canvas.create_oval(self.get_screen_coords(centered_point[0] - 5, centered_point[1] - 5, centered_point[0] + 5, centered_point[1] + 5), fill="blue")
 
-        radius = calc_radius(arc, avg)
+        radius = calc_radius(arc, centered_point)
 
         self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
-        self.canvas.create_text([50, 60], text="Coount = {0:.2f}".format(self.counter), fill="black")
 
         for k, b in radius_lines:
             self.canvas.create_line(self.get_screen_coords(-self.width,
