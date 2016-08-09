@@ -2,7 +2,7 @@ import tkinter
 from tkinter import *
 from arc_generator import get_arc
 from detector_recursive import find_intersection, get_perpendicular, find_segments, calc_radius, find_edges, \
-    get_middle_norm
+    get_middle_norm, get_distance
 
 
 class GUI:
@@ -16,7 +16,7 @@ class GUI:
         self.canvas = Canvas(self.window, height=600, width=600, bg="white")
         self.canvas.grid(row=0, column=0)
 
-        self.update_period = 10
+        self.update_period = 500
         self.counter = 0
 
         self.window.after(self.update_period, self.loop())
@@ -26,11 +26,13 @@ class GUI:
             self.loop()
 
     def loop(self):
+
         self.canvas.delete(self.canvas, ALL)
-        arc = get_arc(20, 200, 1000, 150, 1)
+        r = 150
+        arc = get_arc(20, 100, 1000, r, 1)
 
         sorted_arc = sorted(arc, key=lambda x: x[0])
-        segments = find_segments(sorted_arc, 5)
+        segments = find_segments(sorted_arc, 4)
         self.draw_arc(arc)
         for x, y in segments:
             self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="yellow")
@@ -68,26 +70,48 @@ class GUI:
 
         avg = sum[0] / len(avg_points), sum[1] / len(avg_points)
 
-        arc_edges = find_edges(arc)
-        arc_line, (perp_k, perp_b), midpoint = get_middle_norm(*arc_edges)
-        dist_k, dist_b = get_perpendicular(perp_k, perp_b, avg[0], avg[1])
-        centered_point = find_intersection(perp_k, perp_b, dist_k, dist_b)
+        raw_radius = calc_radius(arc, avg)
 
-        # for x,y in avg_points:
-        #     self.canvas.create_oval(self.get_screen_coords(x - 5, y - 5, x + 5, y + 5), fill="yellow")
+        new_avg_points = []
+        for x, y in avg_points:
+            if get_distance(x, y, avg[0], avg[1]) < raw_radius / 3:
+                new_avg_points.append((x, y))
 
+        new_avg = None
+        try:
+            sum = [0, 0]
+            for x, y in new_avg_points:
+                sum[0] += x
+                sum[1] += y
+
+            new_avg = sum[0] / len(new_avg_points), sum[1] / len(new_avg_points)
+
+            radius = calc_radius(arc, new_avg)
+        except ZeroDivisionError:
+            print("no new avg points")
+
+
+
+
+        # DRAWING
+
+        for x,y in avg_points:
+            self.canvas.create_oval(self.get_screen_coords(x - 1, y - 1, x + 1, y + 1), fill="black")
         self.canvas.create_oval(self.get_screen_coords(avg[0] - 5, avg[1] - 5, avg[0] + 5, avg[1] + 5), fill="red")
-        self.canvas.create_oval(self.get_screen_coords(centered_point[0] - 5, centered_point[1] - 5, centered_point[0] + 5, centered_point[1] + 5), fill="blue")
+        if new_avg:
+            self.canvas.create_oval(self.get_screen_coords(new_avg[0] - 5, new_avg[1] - 5, new_avg[0] + 5, new_avg[1] + 5), fill="blue")
+            self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
+            self.canvas.create_text([50, 80], text="Ea = {0:.5f}".format(abs(r - radius)), fill="black")
 
-        radius = calc_radius(arc, centered_point)
 
-        self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
+        # for k, b in radius_lines:
+        #     self.canvas.create_line(self.get_screen_coords(-self.width,
+        #                                                    -k*self.width + b,
+        #                                                    self.width,
+        #                                                    k*self.width + b), fill="green")
 
-        for k, b in radius_lines:
-            self.canvas.create_line(self.get_screen_coords(-self.width,
-                                                           -k*self.width + b,
-                                                           self.width,
-                                                           k*self.width + b), fill="green")
+            for x, y in new_avg_points:
+                self.canvas.create_line(self.get_screen_coords(x, y, new_avg[0], new_avg[1]))
 
         self.window.after(self.update_period, self.loop)
 
