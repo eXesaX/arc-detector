@@ -1,7 +1,7 @@
 import tkinter
 from tkinter import *
 from arc_generator import get_arc
-from detector_recursive import find_edges, get_middle_norm, find_intersection, get_perpendicular, get_distance, find_segments
+from detector_recursive import find_intersection, get_perpendicular, find_segments, calc_radius
 
 class GUI:
     def __init__(self, width=600, height=600):
@@ -15,17 +15,21 @@ class GUI:
         self.canvas.grid(row=0, column=0)
 
         self.update_period = 10
+        self.counter = 0
+
         self.window.after(self.update_period, self.loop())
         self.window.mainloop()
+
         while True:
             self.loop()
 
     def loop(self):
+        self.counter += 1
         self.canvas.delete(self.canvas, ALL)
-        arc = get_arc(20, 140, 1000, 100, 1)
+        arc = get_arc(20, 200, 1000, 150, 1)
 
         sorted_arc = sorted(arc, key=lambda x: x[0])
-        segments = find_segments(sorted_arc, 3)
+        segments = find_segments(sorted_arc, 5)
         self.draw_arc(arc)
         for x, y in segments:
             self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="yellow")
@@ -46,28 +50,32 @@ class GUI:
             except ZeroDivisionError:
                 pass
 
+        radius_lines = radius_lines[1:]
+
         avg_points = []
-        for i in range(0, len(radius_lines), 2):
-            try:
-                avg_point = find_intersection(radius_lines[i][0],
-                                              radius_lines[i][1],
-                                              radius_lines[i - 1][0],
-                                              radius_lines[i - 1][1])
-                avg_points.append(avg_point)
-            except ZeroDivisionError:
-                pass
+
+        for line in radius_lines:
+            for line2 in radius_lines:
+                if line != line2:
+                    avg_point = find_intersection(line[0], line[1], line2[0], line2[1])
+                    avg_points.append(avg_point)
+
+        sum = [0, 0]
+        for x, y in avg_points:
+            sum[0] += x
+            sum[1] += y
+
+        avg = sum[0] / len(avg_points), sum[1] / len(avg_points)
 
         for x,y in avg_points:
             self.canvas.create_oval(self.get_screen_coords(x - 5, y - 5, x + 5, y + 5), fill="yellow")
 
-        sum = [0, 0]
-        for point in avg_points:
-            sum[0], sum[1] = sum[0] + point[0], sum[1] + point[1]
-
-        avg = sum[0] / len(sum), sum[1] / len(sum)
-
         self.canvas.create_oval(self.get_screen_coords(avg[0] - 5, avg[1] - 5, avg[0] + 5, avg[1] + 5), fill="red")
 
+        radius = calc_radius(arc, avg)
+
+        self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
+        self.canvas.create_text([50, 60], text="Coount = {0:.2f}".format(self.counter), fill="black")
 
         for k, b in radius_lines:
             self.canvas.create_line(self.get_screen_coords(-self.width,

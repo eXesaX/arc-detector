@@ -52,6 +52,7 @@ def find_segments(arc, depth, segments_acc=None):
     if depth == 0:
         return segments_acc
     elif len(arc) < 2:
+        print("len arc exit")
         return segments_acc
     else:
         left_edge, right_edge = find_edges(arc)
@@ -80,4 +81,16 @@ def find_segments(arc, depth, segments_acc=None):
 
             return find_segments(sorted_arc[:am_index], depth - 1, sa_new) + find_segments(sorted_arc[am_index:], depth - 1, sa_new)
         except ZeroDivisionError:
-            return [left_edge] + segments_acc
+            if segments_acc is not None:
+                return [left_edge] + segments_acc
+            else:
+                return [left_edge]
+
+
+def calc_radius(arc, midpoint):
+    distances = []
+    for x, y in arc:
+        dist = sqrt(pow(x - midpoint[0], 2) + pow(y - midpoint[1], 2))
+        distances.append(dist)
+    avg = np.average(distances)
+    return avg
