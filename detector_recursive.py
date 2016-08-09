@@ -56,7 +56,7 @@ def find_segments(arc, depth, segments_acc=None):
     else:
         left_edge, right_edge = find_edges(arc)
         try:
-            arc_line, norm, midpoint = get_middle_norm(*(left_edge, right_edge))
+            arc_line, norm, midpoint = get_middle_norm(left_edge, right_edge)
 
             sorted_arc = sorted(arc, key=lambda x: x[0])
 
@@ -70,10 +70,13 @@ def find_segments(arc, depth, segments_acc=None):
 
             arc_midpoint = min(distances, key=lambda x: x[2])
             am_index = arc_midpoint[3]
-            if not segments_acc:
-                sa_new = [left_edge]
+            if depth == 1:
+                if not segments_acc:
+                    sa_new = [left_edge]
+                else:
+                    sa_new = [left_edge] + segments_acc
             else:
-                sa_new = [left_edge] + segments_acc
+                sa_new = segments_acc
 
             return find_segments(sorted_arc[:am_index], depth - 1, sa_new) + find_segments(sorted_arc[am_index:], depth - 1, sa_new)
         except ZeroDivisionError:
