@@ -3,6 +3,7 @@ from tkinter import *
 from arc_generator import get_arc
 from detector_recursive import find_intersection, get_perpendicular, find_segments, calc_radius, find_edges, \
     get_middle_norm, get_distance
+from sklearn.cluster import DBSCAN
 
 
 class GUI:
@@ -19,11 +20,10 @@ class GUI:
         self.update_period = 500
         self.counter = 0
 
-        self.window.after(self.update_period, self.loop())
-        self.window.mainloop()
+        self.dbscan = DBSCAN(eps=0.001, min_samples=1)
 
-        while True:
-            self.loop()
+        self.window.after(self.update_period, self.loop)
+        self.window.mainloop()
 
     def loop(self):
 
@@ -63,45 +63,63 @@ class GUI:
                     avg_point = find_intersection(line[0], line[1], line2[0], line2[1])
                     avg_points.append(avg_point)
 
+        # CLUSTERING
+
+        clusters = self.dbscan.fit_predict(avg_points)
+        clusters = list(zip(clusters, avg_points))
+        grouped_clusters = dict()
+        for id, points in clusters:
+            if id in grouped_clusters:
+                grouped_clusters[id].append(points)
+            else:
+                grouped_clusters[id] = [points]
+
+        sorted_clusters = sorted(grouped_clusters.items(), key=lambda x: len(x[1]), reverse=True)
+
+        largest_cluster = max(sorted_clusters, key=lambda x: len(x[1]))[1]
+
         sum = [0, 0]
-        for x, y in avg_points:
+        for x, y in largest_cluster:
             sum[0] += x
             sum[1] += y
 
-        avg = sum[0] / len(avg_points), sum[1] / len(avg_points)
+        avg = sum[0] / len(largest_cluster), sum[1] / len(largest_cluster)
 
         raw_radius = calc_radius(arc, avg)
 
-        new_avg_points = []
-        for x, y in avg_points:
-            if get_distance(x, y, avg[0], avg[1]) < raw_radius / 3:
-                new_avg_points.append((x, y))
 
-        new_avg = None
-        try:
-            sum = [0, 0]
-            for x, y in new_avg_points:
-                sum[0] += x
-                sum[1] += y
 
-            new_avg = sum[0] / len(new_avg_points), sum[1] / len(new_avg_points)
-
-            radius = calc_radius(arc, new_avg)
-        except ZeroDivisionError:
-            print("no new avg points")
+        # new_avg_points = []
+        # for x, y in avg_points:
+        #     if get_distance(x, y, avg[0], avg[1]) < raw_radius / 3:
+        #         new_avg_points.append((x, y))
+        #
+        # new_avg = None
+        # try:
+        #     sum = [0, 0]
+        #     for x, y in new_avg_points:
+        #         sum[0] += x
+        #         sum[1] += y
+        #
+        #     new_avg = sum[0] / len(new_avg_points), sum[1] / len(new_avg_points)
+        #
+        #     radius = calc_radius(arc, new_avg)
+        # except ZeroDivisionError:
+        #     print("no new avg points")
 
 
 
 
         # DRAWING
 
-        for x,y in avg_points:
-            self.canvas.create_oval(self.get_screen_coords(x - 1, y - 1, x + 1, y + 1), fill="black")
+        for x, y in largest_cluster:
+            self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="black")
+            self.canvas.create_line(self.get_screen_coords(x, y, avg[0], avg[1]), fill="black")
         self.canvas.create_oval(self.get_screen_coords(avg[0] - 5, avg[1] - 5, avg[0] + 5, avg[1] + 5), fill="red")
-        if new_avg:
-            self.canvas.create_oval(self.get_screen_coords(new_avg[0] - 5, new_avg[1] - 5, new_avg[0] + 5, new_avg[1] + 5), fill="blue")
-            self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
-            self.canvas.create_text([50, 80], text="Ea = {0:.5f}".format(abs(r - radius)), fill="black")
+        # if new_avg:
+        #     self.canvas.create_oval(self.get_screen_coords(new_avg[0] - 5, new_avg[1] - 5, new_avg[0] + 5, new_avg[1] + 5), fill="blue")
+        self.canvas.create_text([50, 50], text="R = {0:.2f}".format(raw_radius), fill="black")
+        #     self.canvas.create_text([50, 80], text="Ea = {0:.5f}".format(abs(r - radius)), fill="black")
 
 
         # for k, b in radius_lines:
@@ -110,8 +128,7 @@ class GUI:
         #                                                    self.width,
         #                                                    k*self.width + b), fill="green")
 
-            for x, y in new_avg_points:
-                self.canvas.create_line(self.get_screen_coords(x, y, new_avg[0], new_avg[1]))
+
 
         self.window.after(self.update_period, self.loop)
 
