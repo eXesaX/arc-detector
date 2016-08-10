@@ -1,9 +1,7 @@
 import tkinter
 from tkinter import *
 from arc_generator import get_arc
-from detector_recursive import find_intersection, get_perpendicular, find_segments, calc_radius, find_edges, \
-    get_middle_norm, get_distance
-from sklearn.cluster import DBSCAN
+from detector_recursive import find_segments, calc_radius, get_radius_lines, get_avg_points, filter_far_points, calc_avg
 
 
 class GUI:
@@ -18,9 +16,6 @@ class GUI:
         self.canvas.grid(row=0, column=0)
 
         self.update_period = 10
-        self.counter = 0
-
-        self.dbscan = DBSCAN(eps=200, min_samples=5)
 
         self.window.after(self.update_period, self.loop)
         self.window.mainloop()
@@ -31,63 +26,28 @@ class GUI:
         r = 150
         arc = get_arc(20, 100, 1000, r, 1)
 
+        # radius calc
+
         sorted_arc = sorted(arc, key=lambda x: x[0])
+
         segments = find_segments(sorted_arc, 4)
-        self.draw_arc(arc)
-        for x, y in segments:
-            self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="yellow")
 
+        radius_lines = get_radius_lines(segments)
 
-        radius_lines = []
-        for i, (x, y) in enumerate(segments):
-            x1, y1, x2, y2 = segments[i - 1][0], segments[i - 1][1], x, y
-            midpoint = (x2 + x1) / 2, (y2 + y1) / 2
-            try:
-                A = x2 - x1
-                B = y1 - y2
-                C = x1*y2 - y1*x2
-                k = B / -A
-                b = C / -A
-                r_line = get_perpendicular(k, b, midpoint[0], midpoint[1])
-                radius_lines.append(r_line)
-            except ZeroDivisionError:
-                pass
+        avg_points = get_avg_points(radius_lines)
 
-        radius_lines = radius_lines[1:]
+        largest_cluster = filter_far_points(avg_points)
 
-        avg_points = []
-
-        for line in radius_lines:
-            for line2 in radius_lines:
-                if line != line2:
-                    avg_point = find_intersection(line[0], line[1], line2[0], line2[1])
-                    avg_points.append(avg_point)
-
-        # CLUSTERING
-
-        clusters = self.dbscan.fit_predict(avg_points)
-        clusters = list(zip(clusters, avg_points))
-        grouped_clusters = dict()
-        for id, points in clusters:
-            if id in grouped_clusters:
-                grouped_clusters[id].append(points)
-            else:
-                grouped_clusters[id] = [points]
-
-        sorted_clusters = sorted(grouped_clusters.items(), key=lambda x: len(x[1]), reverse=True)
-
-        largest_cluster = max(sorted_clusters, key=lambda x: len(x[1]))[1]
-
-        sum = [0, 0]
-        for x, y in largest_cluster:
-            sum[0] += x
-            sum[1] += y
-
-        avg = sum[0] / len(largest_cluster), sum[1] / len(largest_cluster)
+        avg = calc_avg(largest_cluster)
 
         radius = calc_radius(arc, avg)
 
         # DRAWING
+
+        self.draw_arc(arc)
+        for x, y in segments:
+            self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="yellow")
+
 
         for x, y in largest_cluster:
             self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="red")
@@ -96,6 +56,7 @@ class GUI:
         self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
 
         self.window.after(self.update_period, self.loop)
+
 
 
     def draw_arc(self, arc):

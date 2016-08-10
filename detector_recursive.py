@@ -1,5 +1,9 @@
 import numpy as np
 from math import sqrt
+from sklearn.cluster import DBSCAN
+
+dbscan = DBSCAN(eps=200, min_samples=5)
+
 
 def detect_arc(arc):
     pass
@@ -93,4 +97,54 @@ def calc_radius(arc, midpoint):
         dist = sqrt(pow(x - midpoint[0], 2) + pow(y - midpoint[1], 2))
         distances.append(dist)
     avg = np.average(distances)
+    return avg
+
+def get_radius_lines(segments):
+    radius_lines = []
+    for i, (x, y) in enumerate(segments):
+        x1, y1, x2, y2 = segments[i - 1][0], segments[i - 1][1], x, y
+        midpoint = (x2 + x1) / 2, (y2 + y1) / 2
+        try:
+            A = x2 - x1
+            B = y1 - y2
+            C = x1 * y2 - y1 * x2
+            k = B / -A
+            b = C / -A
+            r_line = get_perpendicular(k, b, midpoint[0], midpoint[1])
+            radius_lines.append(r_line)
+        except ZeroDivisionError:
+            pass
+    radius_lines = radius_lines[1:]
+    return radius_lines
+
+def get_avg_points(radius_lines):
+    avg_points = []
+    for line in radius_lines:
+        for line2 in radius_lines:
+            if line != line2:
+                avg_point = find_intersection(line[0], line[1], line2[0], line2[1])
+                avg_points.append(avg_point)
+
+    return avg_points
+
+
+def filter_far_points(avg_points):
+    clusters = dbscan.fit_predict(avg_points)
+    clusters = list(zip(clusters, avg_points))
+    grouped_clusters = dict()
+    for id, points in clusters:
+        if id in grouped_clusters:
+            grouped_clusters[id].append(points)
+        else:
+            grouped_clusters[id] = [points]
+    sorted_clusters = sorted(grouped_clusters.items(), key=lambda x: len(x[1]), reverse=True)
+    largest_cluster = max(sorted_clusters, key=lambda x: len(x[1]))[1]
+    return largest_cluster
+
+def calc_avg(largest_cluster):
+    sum = [0, 0]
+    for x, y in largest_cluster:
+        sum[0] += x
+        sum[1] += y
+    avg = sum[0] / len(largest_cluster), sum[1] / len(largest_cluster)
     return avg
