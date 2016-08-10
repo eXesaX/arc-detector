@@ -1,7 +1,9 @@
 import tkinter
 from tkinter import *
 from arc_generator import get_arc
-from detector_recursive import find_segments, calc_radius, get_radius_lines, get_avg_points, filter_far_points, calc_avg
+from detector_recursive import find_segments, calc_radius, get_radius_lines, get_avg_points, filter_far_points, calc_avg, \
+    rotate, filter_noise_points
+from LS2D import LS2D
 
 
 class GUI:
@@ -12,10 +14,13 @@ class GUI:
         self.height = height
         self.window.geometry(str(self.width) + "x" + str(self.width))
 
+        self.sensor = LS2D("192.168.1.56", 11681, 123)
+        print("Sensor init done")
+
         self.canvas = Canvas(self.window, height=600, width=600, bg="white")
         self.canvas.grid(row=0, column=0)
 
-        self.update_period = 10
+        self.update_period = 500
 
         self.window.after(self.update_period, self.loop)
         self.window.mainloop()
@@ -25,17 +30,22 @@ class GUI:
         self.canvas.delete(self.canvas, ALL)
         r = 150
         arc = get_arc(20, 100, 1000, r, 1)
+        # self.sensor.read_single_packet()
+        # arc = self.sensor.packets[0][0]
+        # arc = filter_noise_points(arc)
+        # rotate arc to fit algorithm's requirements.
 
+        # arc = rotate(arc, -90)
         # radius calc
-
+        # print(arc)
         sorted_arc = sorted(arc, key=lambda x: x[0])
 
         segments = find_segments(sorted_arc, 4)
-
+        print(len(segments))
         radius_lines = get_radius_lines(segments)
-
+        # print(len(radius_lines))
         avg_points = get_avg_points(radius_lines)
-
+        # print(len(avg_points))
         largest_cluster = filter_far_points(avg_points)
 
         avg = calc_avg(largest_cluster)
@@ -54,6 +64,12 @@ class GUI:
             self.canvas.create_line(self.get_screen_coords(x, y, avg[0], avg[1]), fill="red")
         self.canvas.create_oval(self.get_screen_coords(avg[0] - 5, avg[1] - 5, avg[0] + 5, avg[1] + 5), fill="red")
         self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
+
+        for k, b in radius_lines:
+            self.canvas.create_line(self.get_screen_coords(-self.width,
+                                                           -self.width * k + b,
+                                                           self.width,
+                                                           self.width * k + b), fill="green")
 
         self.window.after(self.update_period, self.loop)
 
