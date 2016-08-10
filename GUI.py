@@ -17,10 +17,10 @@ class GUI:
         self.canvas = Canvas(self.window, height=600, width=600, bg="white")
         self.canvas.grid(row=0, column=0)
 
-        self.update_period = 500
+        self.update_period = 10
         self.counter = 0
 
-        self.dbscan = DBSCAN(eps=0.001, min_samples=1)
+        self.dbscan = DBSCAN(eps=200, min_samples=5)
 
         self.window.after(self.update_period, self.loop)
         self.window.mainloop()
@@ -85,50 +85,15 @@ class GUI:
 
         avg = sum[0] / len(largest_cluster), sum[1] / len(largest_cluster)
 
-        raw_radius = calc_radius(arc, avg)
-
-
-
-        # new_avg_points = []
-        # for x, y in avg_points:
-        #     if get_distance(x, y, avg[0], avg[1]) < raw_radius / 3:
-        #         new_avg_points.append((x, y))
-        #
-        # new_avg = None
-        # try:
-        #     sum = [0, 0]
-        #     for x, y in new_avg_points:
-        #         sum[0] += x
-        #         sum[1] += y
-        #
-        #     new_avg = sum[0] / len(new_avg_points), sum[1] / len(new_avg_points)
-        #
-        #     radius = calc_radius(arc, new_avg)
-        # except ZeroDivisionError:
-        #     print("no new avg points")
-
-
-
+        radius = calc_radius(arc, avg)
 
         # DRAWING
 
         for x, y in largest_cluster:
-            self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="black")
-            self.canvas.create_line(self.get_screen_coords(x, y, avg[0], avg[1]), fill="black")
+            self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="red")
+            self.canvas.create_line(self.get_screen_coords(x, y, avg[0], avg[1]), fill="red")
         self.canvas.create_oval(self.get_screen_coords(avg[0] - 5, avg[1] - 5, avg[0] + 5, avg[1] + 5), fill="red")
-        # if new_avg:
-        #     self.canvas.create_oval(self.get_screen_coords(new_avg[0] - 5, new_avg[1] - 5, new_avg[0] + 5, new_avg[1] + 5), fill="blue")
-        self.canvas.create_text([50, 50], text="R = {0:.2f}".format(raw_radius), fill="black")
-        #     self.canvas.create_text([50, 80], text="Ea = {0:.5f}".format(abs(r - radius)), fill="black")
-
-
-        # for k, b in radius_lines:
-        #     self.canvas.create_line(self.get_screen_coords(-self.width,
-        #                                                    -k*self.width + b,
-        #                                                    self.width,
-        #                                                    k*self.width + b), fill="green")
-
-
+        self.canvas.create_text([50, 50], text="R = {0:.2f}".format(radius), fill="black")
 
         self.window.after(self.update_period, self.loop)
 
