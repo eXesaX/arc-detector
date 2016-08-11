@@ -10,19 +10,11 @@ def detect_arc(arc):
 
 
 def find_edges(arc):
-    sorted_arc = sorted(arc, key=lambda x: x[1])
-    left_point = [0, 0]
-    left_edge = sorted_arc[:5]
-    for x, y in left_edge:
-        left_point[0] += x
-        left_point[1] += y
-    left_point = left_point[0] / len(left_edge), left_point[1] / len(left_edge)
-    right_point = [0, 0]
-    right_edge = sorted_arc[-5:]
-    for x, y in right_edge:
-        right_point[0] += x
-        right_point[1] += y
-    right_point = right_point[0] / len(right_edge), right_point[1] / len(right_edge)
+    sorted_arc = sorted(arc, key=lambda x: x[0])
+    left_point = calc_avg(sorted_arc[:10])
+    right_point = calc_avg(sorted_arc[-10:])
+    # left_point = min(arc, key=lambda x: x[0])
+    # right_point = max(arc, key=lambda x: x[0])
 
     return left_point, right_point
 
@@ -53,8 +45,6 @@ def get_perpendicular(k, b, x, y):
 
 
 def find_intersection(k1, b1, k2, b2):
-    if k1 == k2:
-        return None
     x = (b2 - b1) / (k1 - k2)
     y = k1 * x + b1
 
@@ -66,13 +56,11 @@ def get_distance(x1, y1, x2, y2):
 
 
 def find_segments(arc, depth, segments_acc=None):
-    # print("FS: depth={0}".format(depth))
     if depth == 0:
-        # print("depth = 0. exiting")
-        return []
-    elif len(arc) < 10:
-        # print("len arc exit")
-        return []
+        return segments_acc
+    elif len(arc) < 2:
+        print("len arc exit")
+        return segments_acc
     else:
         left_edge, right_edge = find_edges(arc)
         try:
@@ -97,10 +85,12 @@ def find_segments(arc, depth, segments_acc=None):
                     sa_new = [left_edge] + segments_acc
             else:
                 sa_new = segments_acc
-
-            return find_segments(sorted_arc[:am_index], depth - 1, sa_new) + find_segments(sorted_arc[am_index:], depth - 1, sa_new)
+            a = find_segments(sorted_arc[:am_index], depth - 1, sa_new)
+            b = find_segments(sorted_arc[am_index:], depth - 1, sa_new)
+            if a is None: a = []
+            if b is None: b = []
+            return a + b
         except ZeroDivisionError:
-            # print("ZDE")
             if segments_acc is not None:
                 return [left_edge] + segments_acc
             else:
@@ -114,7 +104,6 @@ def calc_radius(arc, midpoint):
         distances.append(dist)
     avg = np.average(distances)
     return avg
-
 
 def get_radius_lines(segments):
     radius_lines = []
@@ -130,10 +119,9 @@ def get_radius_lines(segments):
             r_line = get_perpendicular(k, b, midpoint[0], midpoint[1])
             radius_lines.append(r_line)
         except ZeroDivisionError:
-            print(x1, y1, x2, y2)
+            pass
     radius_lines = radius_lines[1:]
     return radius_lines
-
 
 def get_avg_points(radius_lines):
     avg_points = []
@@ -141,18 +129,13 @@ def get_avg_points(radius_lines):
         for line2 in radius_lines:
             if line != line2:
                 avg_point = find_intersection(line[0], line[1], line2[0], line2[1])
-                if avg_point is not None:
-                    avg_points.append(avg_point)
+                avg_points.append(avg_point)
 
     return avg_points
 
 
 def filter_far_points(avg_points):
-
-    if len(avg_points) == 0:
-        return avg_points
     clusters = dbscan.fit_predict(avg_points)
-
     clusters = list(zip(clusters, avg_points))
     grouped_clusters = dict()
     for id, points in clusters:
@@ -164,15 +147,12 @@ def filter_far_points(avg_points):
     largest_cluster = max(sorted_clusters, key=lambda x: len(x[1]))[1]
     return largest_cluster
 
-
-def calc_avg(nums):
-    avg = [0, 0]
-    if len(nums) == 0:
-        return avg
-    for x, y in nums:
-        avg[0] += x
-        avg[1] += y
-    avg = avg[0] / len(nums), avg[1] / len(nums)
+def calc_avg(largest_cluster):
+    sum = [0, 0]
+    for x, y in largest_cluster:
+        sum[0] += x
+        sum[1] += y
+    avg = sum[0] / len(largest_cluster), sum[1] / len(largest_cluster)
     return avg
 
 
