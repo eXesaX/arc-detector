@@ -1,7 +1,8 @@
 import tkinter
 from tkinter import *
 from arc_generator import get_arc
-from detector_recursive import find_segments, calc_radius, get_radius_lines, get_avg_points, filter_far_points, calc_avg
+from detector_recursive import find_segments, calc_radius, get_radius_lines, get_avg_points, filter_far_points, calc_avg, \
+    preprocess
 
 
 class GUI:

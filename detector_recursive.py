@@ -10,7 +10,7 @@ def detect_arc(arc):
 
 
 def find_edges(arc):
-    sorted_arc = sorted(arc, key=lambda x: x[1])
+    sorted_arc = sorted(arc, key=lambda x: x[0])
     left_point = calc_avg(sorted_arc[:10])
     right_point = calc_avg(sorted_arc[-10:])
     # left_point = min(arc, key=lambda x: x[0])
@@ -85,8 +85,11 @@ def find_segments(arc, depth, segments_acc=None):
                     sa_new = [left_edge] + segments_acc
             else:
                 sa_new = segments_acc
-
-            return find_segments(sorted_arc[:am_index], depth - 1, sa_new) + find_segments(sorted_arc[am_index:], depth - 1, sa_new)
+            a = find_segments(sorted_arc[:am_index], depth - 1, sa_new)
+            b = find_segments(sorted_arc[am_index:], depth - 1, sa_new)
+            if a is None: a = []
+            if b is None: b = []
+            return a + b
         except ZeroDivisionError:
             if segments_acc is not None:
                 return [left_edge] + segments_acc
@@ -108,7 +111,6 @@ def get_radius_lines(segments):
         x1, y1, x2, y2 = segments[i - 1][0], segments[i - 1][1], x, y
         midpoint = (x2 + x1) / 2, (y2 + y1) / 2
         try:
-            print(x1, y1, x2, y2)
             A = x2 - x1
             B = y1 - y2
             C = x1 * y2 - y1 * x2
@@ -152,3 +154,17 @@ def calc_avg(largest_cluster):
         sum[1] += y
     avg = sum[0] / len(largest_cluster), sum[1] / len(largest_cluster)
     return avg
+
+
+def preprocess(arc):
+    width = max(arc, key=lambda x: x[0])[0] - min(arc, key=lambda x: x[0])[0]
+    height = max(arc, key=lambda x: x[1])[1] - min(arc, key=lambda x: x[1])[1]
+
+    picture = np.zeros((width * 3, height * 3), np.uint8)
+
+    for x, y in arc:
+        picture[x, y] = 255
+
+    processed = np.transpose(np.nonzero(picture))
+
+    return processed
