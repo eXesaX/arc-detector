@@ -29,13 +29,13 @@ class GUI:
 
         self.canvas.delete(self.canvas, ALL)
         r = 150
-        arc = get_arc(20, 100, 1000, r, 1)
-        # self.sensor.read_single_packet()
-        # arc = self.sensor.packets[0][0]
-        # arc = filter_noise_points(arc)
+        # arc = get_arc(20, 100, 1000, r, 1)
+        self.sensor.read_single_packet()
+        arc = self.sensor.packets[0][0]
+        arc = filter_noise_points(arc)
         # rotate arc to fit algorithm's requirements.
 
-        # arc = rotate(arc, -90)
+        arc = rotate(arc, -90)
         # radius calc
 
         sorted_arc = sorted(arc, key=lambda x: x[0])
@@ -58,6 +58,8 @@ class GUI:
         for x, y in segments:
             self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="yellow")
 
+        # self.canvas.create_line(self.get_screen_coords(0, 0, avg[0], avg[1]), fill="green")
+
 
         for x, y in largest_cluster:
             self.canvas.create_oval(self.get_screen_coords(x - 2, y - 2, x + 2, y + 2), fill="red")
@@ -75,15 +77,15 @@ class GUI:
 
     def get_point_coords(self, x, y):
         return x + int(self.width / 2), \
-               y + int(self.height / 2), \
+               y + int(self.height / 2) + 300, \
                x + int(self.width / 2) + 1, \
-               y + int(self.height / 2) + 1
+               y + int(self.height / 2) + 1 + 300
 
     def get_screen_coords(self, x1, y1, x2, y2):
         return x1 + int(self.width / 2), \
-               y1 + int(self.height / 2), \
+               y1 + int(self.height / 2) + 300, \
                x2 + int(self.width / 2), \
-               y2 + int(self.height / 2)
+               y2 + int(self.height / 2) + 300
 
 
 if __name__ == "__main__":

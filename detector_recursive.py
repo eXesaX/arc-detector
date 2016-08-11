@@ -57,10 +57,16 @@ def get_distance(x1, y1, x2, y2):
 
 def find_segments(arc, depth, segments_acc=None):
     if depth == 0:
-        return segments_acc
+        if segments_acc is None:
+            return []
+        else:
+            return segments_acc
     elif len(arc) < 2:
         print("len arc exit")
-        return segments_acc
+        if segments_acc is None:
+            return []
+        else:
+            return segments_acc
     else:
         left_edge, right_edge = find_edges(arc)
         try:
@@ -171,6 +177,6 @@ def filter_noise_points(arc):
     filtered = []
     for x, y in arc:
         if x >= 10:
-            filtered.append((x*5-200, y*5))
+            filtered.append((x + 200, y))
 
     return filtered
