@@ -10,8 +10,11 @@ def detect_arc(arc):
 
 
 def find_edges(arc):
-    left_point = min(arc, key=lambda x: x[0])
-    right_point = max(arc, key=lambda x: x[0])
+    sorted_arc = sorted(arc, key=lambda x: x[1])
+    left_point = calc_avg(sorted_arc[:10])
+    right_point = calc_avg(sorted_arc[-10:])
+    # left_point = min(arc, key=lambda x: x[0])
+    # right_point = max(arc, key=lambda x: x[0])
 
     return left_point, right_point
 
@@ -105,6 +108,7 @@ def get_radius_lines(segments):
         x1, y1, x2, y2 = segments[i - 1][0], segments[i - 1][1], x, y
         midpoint = (x2 + x1) / 2, (y2 + y1) / 2
         try:
+            print(x1, y1, x2, y2)
             A = x2 - x1
             B = y1 - y2
             C = x1 * y2 - y1 * x2
